@@ -18,3 +18,19 @@ Finally wanted to train my Python skill around logging, subprocess, etc.
 ## Misc notes
 
 * rsync options are badly configured for NFS or other non-local disks.
+
+# Example crontab configuration
+
+## Backup daily (root crontab, 3am every day )
+
+    # m h  dom mon dow   command
+    0 3 * * * /home/dmiyakawa/src/do_backup/do_backup.py --verbose-log-file=/var/log/do_backup.log --exclude=/opt/vagrant --exclude=/var/lib/docker --exclude=/var/lib/lxc /
+
+## Take snapshots to /mnt/disk0/backup_hourly every hour (user crontab)
+
+    # m h  dom mon dow   command
+    01 * * * * /home/dmiyakawa/src/do_backup/do_backup.py --hourly --base-dir=/mnt/disk0/backup_hourly /home/dmiyakawa --exclude=.cache --exclude=.local --exclude=.config --exclude=tmp --verbose-log-file=/home/dmiyakawa/tmp/do_backup.log
+
+# License
+
+Apache2

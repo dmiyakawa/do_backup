@@ -205,7 +205,7 @@ def _do_actual_backup(src_list, dest_dir_path, link_dir_path,
 def _main_inter(args, logger):
     if args.hourly:
         if args.dir_format == _DEFAULT_DIR_FORMAT:
-            logger.debug('Switch dir_format to "hourly" version ({})'
+            logger.debug('Automatically switch to "hourly" dir_format ("{}")'
                          .format(_DEFAULT_DIR_FORMAT_HOURLY))
             args.dir_format = _DEFAULT_DIR_FORMAT_HOURLY
         else:
@@ -277,7 +277,8 @@ def main():
             return
         file_handler = RotatingFileHandler(log_file,
                                            encoding='utf-8',
-                                           maxBytes=256*1024*1024)
+                                           maxBytes=256*1024*1024,
+                                           backupCount=5)
         formatter = Formatter('%(asctime)s - %(levelname)s - %(message)s')
         file_handler.setFormatter(formatter)
         logger.setLevel('DEBUG')
