@@ -24,7 +24,7 @@ Finally wanted to train my Python skill around logging, subprocess, etc.
 ## Backup daily (root crontab, 3am every day )
 
     # m h  dom mon dow   command
-    0 3 * * * /home/dmiyakawa/src/do_backup/do_backup.py --verbose-log-file=/var/log/do_backup.log --exclude=/opt/vagrant --exclude=/var/lib/docker --exclude=/var/lib/lxc /
+    0 3 * * * /home/dmiyakawa/src/do_backup/do_backup.py --verbose-log-file=/var/log/do_backup/do_backup.log --exclude=/opt/vagrant --exclude=/var/lib/docker --exclude=/var/lib/lxc /
 
 ## Take snapshots to /mnt/disk0/backup_hourly every hour (user crontab)
 
