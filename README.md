@@ -27,7 +27,16 @@ to github after developing 10 hours without any commit).
  * At this point, rsync options used by the Python script
    are badly configured for NFS or other non-local disks.
 
-# Example crontab configuration
+# Examples
+
+Local to Local
+
+    ./do_backup.py --base-dir=/path/to/base/dir /path/to/be/backed/up
+
+Remote (via ssh) to Local  (verbose + debug output)
+
+    ./do_backup.py -v -d -t ssh --dir-format='example.com-%Y%m%d' --base-dir=/tmp/backup example.com:/opt
+
 ## Backup daily (root crontab, 3am every day )
 
     # m h  dom mon dow   command

@@ -9,6 +9,7 @@ import argparse
 import datetime
 import dateutil.relativedelta
 from logging import getLogger,StreamHandler,Formatter
+from logging import DEBUG
 from logging.handlers import RotatingFileHandler
 import os
 import os.path
@@ -76,19 +77,24 @@ def _parse_args():
     parser.add_argument('--hourly',
                         action='store_true',
                         help=('Relevant operations will be applied'
-                              ' on an hourly basis instead'
-                              ' of on a daily basis.'))
+                              ' on an hourly basis.'))
     parser.add_argument('--exclude',
                         action='append',
                         type=str,
-                        help=('files(dirs) that should excluded in addition'
+                        help=('Files(dirs) that should excluded in addition'
                               ' to default list.'))
+    parser.add_argument('--exclude-from',
+                        action='store',
+                        type=str,
+                        help=("A file specifying files(dirs) to be ignored."))
     parser.add_argument('--log',
                         action='store',
                         type=str,
                         help='Log level like DEBUG/INFO/WARN',
                         default='INFO')
-    parser.add_argument('--verbose-rsync',
+    parser.add_argument('-d', '--debug', action='store_true',
+                        help='Shortcut for --log DEBUG')
+    parser.add_argument('-v', '--verbose-rsync',
                         action='store_true',
                         help='Set --verbose option to rsync')
     parser.add_argument('--verbose-log-file',
@@ -96,6 +102,11 @@ def _parse_args():
                         type=str,
                         help=('If specified, store all DEBUG logs into'
                               ' the file.'))
+    parser.add_argument('-t', '--src-type',
+                        action='store',
+                        type=str,
+                        default='local',
+                        help='Specify "local" or "ssh"')
     args = parser.parse_args()
     return args
 
@@ -158,12 +169,17 @@ def _log_split(file_in, file_out, logger, prefix):
 def _do_actual_backup(src_list, dest_dir_path, link_dir_path,
                       excluded_dirs, logger, args):
     cmd_base = 'rsync'
-    options = ['-aAHXuz', '--delete']
+    if args.src_type == 'ssh':
+        options = ['-irl', '--delete']
+    else:
+        options = ['-iaAHXLuz', '--delete']
     if args.verbose_rsync:
         options.append('--verbose')
     if link_dir_path:
-        options.append(' --link-dest={}'.format(link_dir_path))
+        options.append('--link-dest={}'.format(link_dir_path))
     options.extend(map(lambda x: '--exclude ' + x, excluded_dirs))
+    if args.exclude_from:
+        options.append(args.exclude_from)
     cmd = '{} {} {} {}'.format(cmd_base, ' '.join(options),
                                ' '.join(src_list), dest_dir_path)
     logger.debug('Running: {}'.format(cmd))
@@ -220,6 +236,10 @@ def _main_inter(args, logger):
         logger.error('Base directory "{}" is not accessible or writable.'
                      .format(args.base_dir))
         return False
+    if args.base_dir == "/":
+        logger.error("base-dir looks root to me ({})".format(args.base_dir))
+        return False
+    
     today = datetime.datetime.today()
     dest_dir_path = _get_backup_dir_path(today, args.base_dir, args.dir_format)
     src_str = ', '.join(map(lambda x: '"{}"'.format(x), args.src))
@@ -235,7 +255,7 @@ def _main_inter(args, logger):
     excluded_dirs = _DEFAULT_EXCLUDED_DIR
     if args.exclude:
         excluded_dirs.extend(args.exclude)
-    logger.debug('excluded dirs: {}'.format(', '.join(excluded_dirs)))
+    logger.debug('excluded files: {}'.format(', '.join(excluded_dirs)))
     _do_actual_backup(args.src, dest_dir_path, link_dir_path,
                       excluded_dirs, logger, args)
     return True
@@ -256,10 +276,15 @@ def main():
     args = _parse_args()
 
     logger = getLogger(__name__)
-    logger.setLevel(args.log)
     handler = StreamHandler()
     handler.setLevel(args.log)
     logger.addHandler(handler)
+    if args.debug:
+        logger.setLevel(DEBUG)
+        handler.setLevel(DEBUG)
+    else:
+        logger.setLevel(args.log)
+        handler.setLevel(args.log)
     if args.verbose_log_file:
         log_file = args.verbose_log_file
         log_dir = os.path.dirname(log_file)
@@ -281,12 +306,12 @@ def main():
                                            backupCount=5)
         formatter = Formatter('%(asctime)s - %(levelname)s - %(message)s')
         file_handler.setFormatter(formatter)
-        logger.setLevel('DEBUG')
-        file_handler.setLevel('DEBUG')
+        logger.setLevel(DEBUG)
+        file_handler.setLevel(DEBUG)
         logger.addHandler(file_handler)
-
     start_time = time.time()
     successful = False
+    logger.debug("Start running")
     try:
         successful = _main_inter(args, logger)
     except KeyboardInterrupt:
