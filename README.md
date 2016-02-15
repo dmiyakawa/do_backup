@@ -47,6 +47,12 @@ Remote (via ssh) to Local  (verbose + debug output)
     # m h  dom mon dow   command
     01 * * * * /home/dmiyakawa/src/do_backup/do_backup.py --hourly --base-dir=/mnt/disk0/backup_hourly /home/dmiyakawa --exclude=.cache --exclude=.local --exclude=.config --exclude=tmp --verbose-log-file=/home/dmiyakawa/log/do_backup.log
 
+    #
+    # Note "%" must be escaped in crontab!!
+    #
+    # m h  dom mon dow   command
+    01 * * * * /home/dmiyakawa/src/do_backup/do_backup.py -v -d --hourly -t ssh --dir-format="example.com-\%Y\%m\%d-\%H" --base-dir /opt/backup/example.com example.com:/
+
 # License
 
 Apache2

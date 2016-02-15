@@ -170,7 +170,8 @@ def _do_actual_backup(src_list, dest_dir_path, link_dir_path,
                       excluded_dirs, logger, args):
     cmd_base = 'rsync'
     if args.src_type == 'ssh':
-        options = ['-irl', '--delete']
+        # No archive mode (-a)
+        options = ['-irtlz', '--delete']
     else:
         options = ['-iaAHXLuz', '--delete']
     if args.verbose_rsync:
