@@ -107,6 +107,8 @@ def _parse_args():
                         type=str,
                         default='local',
                         help='Specify "local" or "ssh"')
+    parser.add_argument('-c', '--rsync-command', default='rsync',
+                        help='Exact command name to use (maybe "grsync" on Mac)')
     args = parser.parse_args()
     return args
 
@@ -168,7 +170,7 @@ def _log_split(file_in, file_out, logger, prefix):
 
 def _do_actual_backup(src_list, dest_dir_path, link_dir_path,
                       excluded_dirs, logger, args):
-    cmd_base = 'rsync'
+    cmd_base = args.rsync_command
     if args.src_type == 'ssh':
         # No archive mode (-a)
         options = ['-irtlz', '--delete']
