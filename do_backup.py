@@ -21,7 +21,7 @@ import threading
 import time
 import traceback
 
-Version = '3.0'
+Version = '3.0.1'
 
 _DEFAULT_FULL_BACKUP_INTERVAL=35
 _DEFAULT_DIR='/mnt/disk0/backup'
@@ -287,9 +287,6 @@ def _get_human_readable_time(elapsed):
 
 def main():
     args = _parse_args()
-    if args.version:
-        print(Version)
-        exit(0)
 
     logger = getLogger(__name__)
     handler = StreamHandler()
