@@ -21,6 +21,8 @@ import threading
 import time
 import traceback
 
+Version = '3.0'
+
 _DEFAULT_FULL_BACKUP_INTERVAL=35
 _DEFAULT_DIR='/mnt/disk0/backup'
 _DEFAULT_DIR_FORMAT='{hostname}-%Y%m%d'
@@ -94,7 +96,7 @@ def _parse_args():
                         default='INFO')
     parser.add_argument('-d', '--debug', action='store_true',
                         help='Shortcut for --log DEBUG')
-    parser.add_argument('-v', '--verbose-rsync',
+    parser.add_argument('--verbose-rsync',
                         action='store_true',
                         help='Set --verbose option to rsync')
     parser.add_argument('--verbose-log-file',
@@ -106,9 +108,13 @@ def _parse_args():
                         action='store',
                         type=str,
                         default='local',
-                        help='Specify "local" or "ssh"')
+                        help='Can Specify "local", "ssh", or "rough"')
     parser.add_argument('-c', '--rsync-command', default='rsync',
-                        help='Exact command name to use (maybe "grsync" on Mac)')
+                        help='Exact command name to use')
+    parser.add_argument('-v', '--version',
+                        action='version',
+                        version='{}'.format(Version),
+                        help='Show version and exit')
     args = parser.parse_args()
     return args
 
@@ -174,8 +180,12 @@ def _do_actual_backup(src_list, dest_dir_path, link_dir_path,
     if args.src_type == 'ssh':
         # No archive mode (-a)
         options = ['-irtlz', '--delete']
+    elif args.src_type == 'rough':
+        # "Rough" backup, meaning you just want to preserve file content, while
+        # you don't care much about permission, storage usage, etc.
+        options = ['-irtL']
     else:
-        options = ['-iaAHXLuz', '--delete']
+        options = ['-iaAHXLu', '--delete']
     if args.verbose_rsync:
         options.append('--verbose')
     if link_dir_path:
@@ -277,6 +287,9 @@ def _get_human_readable_time(elapsed):
 
 def main():
     args = _parse_args()
+    if args.version:
+        print(Version)
+        exit(0)
 
     logger = getLogger(__name__)
     handler = StreamHandler()
