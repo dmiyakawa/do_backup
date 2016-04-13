@@ -17,6 +17,7 @@ import platform
 import subprocess
 import shlex
 import shutil
+import stat
 import threading
 import time
 import traceback
@@ -128,13 +129,19 @@ def _get_backup_dir_name(thatday, dir_format):
             hostname=platform.node()))
 
 
+# http://stackoverflow.com/questions/21261132
+def _del_rw(action, name, exc):
+    os.chmod(name, stat.S_IWUSR)
+    os.remove(name)
+
+
 def _remove_if_exists(dir_path, logger):
     if os.path.exists(dir_path):
         if not os.path.isdir(dir_path):
             logger.error('{} is not a directory.'.format(dir_path))
             return
         logger.debug('Removing {}'.format(dir_path))
-        shutil.rmtree(dir_path)
+        shutil.rmtree(dir_path, onerror=_del_rw)
 
 
 def _remove_old_backups(today, base_dir, dir_format,
@@ -171,15 +178,15 @@ def _log_split(file_in, file_out, logger, prefix):
         if file_out:
             file_out.write(line)
             file_out.flush()
-        logger.debug(unicode(prefix + line.rstrip(), 'utf-8'))
+        logger.debug(unicode(prefix + line.rstrip(), 'utf-8', errors='replace'))
 
 
 def _do_actual_backup(src_list, dest_dir_path, link_dir_path,
                       excluded_dirs, logger, args):
     cmd_base = args.rsync_command
     if args.src_type == 'ssh':
-        # No archive mode (-a)
-        options = ['-irtlz', '--delete']
+        # Note: do not rely on archive mode (-a)
+        options = ['-irtlz', '--delete', '--no-specials', '--no-devices']
     elif args.src_type == 'rough':
         # "Rough" backup, meaning you just want to preserve file content, while
         # you don't care much about permission, storage usage, etc.
