@@ -130,9 +130,9 @@ def _get_backup_dir_name(thatday, dir_format):
 
 
 # http://stackoverflow.com/questions/21261132
-def _del_rw(action, name, exc):
+def _del_rw(function, name, exc):
     os.chmod(name, stat.S_IWUSR)
-    os.remove(name)
+    function(name)
 
 
 def _remove_if_exists(dir_path, logger):
