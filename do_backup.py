@@ -191,9 +191,9 @@ def _do_actual_backup(src_list, dest_dir_path, link_dir_path,
     elif args.src_type == 'rough':
         # "Rough" backup, meaning you just want to preserve file content, while
         # you don't care much about permission, storage usage, etc.
-        options = ['-irtL']
+        options = ['-irtL', '--no-specials', '--no-devices']
     else:
-        options = ['-iaAHXLu', '--delete']
+        options = ['-iaAHXLu', '--delete', '--no-specials', '--no-devices']
     if args.verbose_rsync:
         options.append('--verbose')
     if link_dir_path:
@@ -323,7 +323,7 @@ def main():
             return
         file_handler = RotatingFileHandler(log_file,
                                            encoding='utf-8',
-                                           maxBytes=256*1024*1024,
+                                           maxBytes=10*1024*1024,
                                            backupCount=5)
         formatter = Formatter('%(asctime)s - %(levelname)s - %(message)s')
         file_handler.setFormatter(formatter)
