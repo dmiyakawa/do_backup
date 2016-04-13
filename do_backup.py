@@ -129,10 +129,11 @@ def _get_backup_dir_name(thatday, dir_format):
             hostname=platform.node()))
 
 
-# http://stackoverflow.com/questions/21261132
-def _del_rw(function, name, exc):
-    os.chmod(name, stat.S_IWUSR)
-    function(name)
+def _del_rw(function, path, exc):
+    os.chmod(path, os.stat(path).st_mode | stat.S_IWUSR)
+    dir_path = os.path.dirname(path)
+    os.chmod(dir_path, os.stat(dir_path).st_mode | stat.S_IWUSR)
+    function(path)
 
 
 def _remove_if_exists(dir_path, logger):
