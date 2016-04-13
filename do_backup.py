@@ -22,7 +22,7 @@ import threading
 import time
 import traceback
 
-Version = '3.0.1'
+Version = '3.0.2'
 
 _DEFAULT_FULL_BACKUP_INTERVAL=35
 _DEFAULT_DIR='/mnt/disk0/backup'
