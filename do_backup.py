@@ -22,7 +22,7 @@ import threading
 import time
 import traceback
 
-Version = '3.1.0'
+Version = '3.1.1'
 
 _DEFAULT_FULL_BACKUP_INTERVAL=35
 _DEFAULT_DIR='/mnt/disk0/backup'
@@ -363,7 +363,7 @@ def main():
         logger.addHandler(file_handler)
     start_time = time.time()
     successful = False
-    logger.debug("Start running (Version: {})".format(Version))
+    logger.info("Start running (Version: {})".format(Version))
     try:
         successful = _main_inter(args, logger)
     except KeyboardInterrupt:
@@ -378,9 +378,11 @@ def main():
     logger.debug('Elapsed: {:.3f} sec ({})'.format(elapsed, human_readable))
 
     if successful:
-        logger.debug('{}: SUCCESSFUL'.format(os.path.basename(__file__)))
+        logger.info('Finished running {} successfully'
+                    .format(os.path.basename(__file__)))
     else:
-        logger.error('{}: FAILURE'.format(os.path.basename(__file__)))
+        logger.error('Failed to running {}'
+                     .format(os.path.basename(__file__)))
 
 
 if __name__ == '__main__':
