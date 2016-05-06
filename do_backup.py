@@ -22,7 +22,7 @@ import threading
 import time
 import traceback
 
-Version = '3.0.3'
+Version = '3.1.0'
 
 _DEFAULT_FULL_BACKUP_INTERVAL=35
 _DEFAULT_DIR='/mnt/disk0/backup'
@@ -39,7 +39,10 @@ _DEFAULT_REMOVAL_THRESHOLD=35
 _DEFAULT_REMOVAL_SEARCH_THRESHOLD=100
 
 _DEFAULT_EXCLUDED_DIR = ['/dev', '/proc', '/sys', '/tmp',
-                         '/mnt', '/media', '/root/.cache']
+                         '/mnt', '/media', '/root',
+                         '/lost+found',
+                         '/var/backups',
+                         '/root/.cache']
 
 def _parse_args():
     parser = argparse.ArgumentParser(
@@ -81,7 +84,7 @@ def _parse_args():
                         action='store_true',
                         help=('Relevant operations will be applied'
                               ' on an hourly basis.'))
-    parser.add_argument('--exclude',
+    parser.add_argument('-e', '--exclude',
                         action='append',
                         type=str,
                         help=('Files(dirs) that should excluded in addition'
@@ -251,12 +254,40 @@ def _main_inter(args, logger):
             if '%H' not in args.dir_format:
                 logger.warn('dir_format does not contain %H while --hourly'
                             ' option is specified')
-    if not (os.path.exists(args.base_dir)
-            and os.path.isdir(args.base_dir)
-            and os.access(args.base_dir, os.W_OK)):
-        logger.error('Base directory "{}" is not accessible or writable.'
+
+    org_base_dir = args.base_dir
+    norm_base_dir = os.path.normpath(args.base_dir)
+    logger.debug('Normalized base_dir: "{}"'.format(norm_base_dir))
+                
+    if args.base_dir == "/":
+        logger.error("base-dir looks root to me ({})"
                      .format(args.base_dir))
         return False
+
+    if os.path.exists(norm_base_dir):
+        # If base_dir exists, check if it is a writable directory.
+        if not os.path.isdir(norm_base_dir):
+            logger.error('Path "{}" is not a directory'
+                         .format(org_norm_dir))
+            return False
+        if not os.access(norm_base_dir, os.W_OK):
+            logger.error('Directory "{}" is not writable'
+                         .format(org_base_dir))
+        logger.info('Directory "{}" exists and writable.'
+                    .format(org_base_dir))
+    else:
+        logger.info('Directory "{}" does not exist. Try creating it.'
+                    .format(org_base_dir))
+        # If base_dir does not exists, check parent's dir.
+        # If parent's dir exists, try creating base_dir.
+        parent_dir = os.path.dirname(norm_base_dir)
+        if (not os.path.exists(parent_dir)
+            or not os.path.isdir(parent_dir)):
+            logger.error('Parent dir "{}" is not accessible'
+                         .format(parent_dir))
+            return False
+        os.mkdir(args.base_dir)
+
     if args.base_dir == "/":
         logger.error("base-dir looks root to me ({})".format(args.base_dir))
         return False
@@ -332,7 +363,7 @@ def main():
         logger.addHandler(file_handler)
     start_time = time.time()
     successful = False
-    logger.debug("Start running")
+    logger.debug("Start running (Version: {})".format(Version))
     try:
         successful = _main_inter(args, logger)
     except KeyboardInterrupt:
