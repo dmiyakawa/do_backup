@@ -22,7 +22,7 @@ import threading
 import time
 import traceback
 
-Version = '3.1.1'
+Version = '3.1.2'
 
 _DEFAULT_FULL_BACKUP_INTERVAL=35
 _DEFAULT_DIR='/mnt/disk0/backup'
@@ -39,7 +39,7 @@ _DEFAULT_REMOVAL_THRESHOLD=35
 _DEFAULT_REMOVAL_SEARCH_THRESHOLD=100
 
 _DEFAULT_EXCLUDED_DIR = ['/dev', '/proc', '/sys', '/tmp',
-                         '/mnt', '/media', '/root',
+                         '/mnt', '/media', '/root', '/run',
                          '/lost+found',
                          '/var/backups',
                          '/root/.cache']
