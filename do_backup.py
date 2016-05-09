@@ -9,7 +9,7 @@ import argparse
 import datetime
 import dateutil.relativedelta
 from logging import getLogger,StreamHandler,Formatter
-from logging import DEBUG
+from logging import DEBUG, WARN
 from logging.handlers import RotatingFileHandler
 import os
 import os.path
@@ -22,7 +22,7 @@ import threading
 import time
 import traceback
 
-Version = '3.1.2'
+Version = '3.2.0'
 
 _DEFAULT_FULL_BACKUP_INTERVAL=35
 _DEFAULT_DIR='/mnt/disk0/backup'
@@ -100,6 +100,8 @@ def _parse_args():
                         default='INFO')
     parser.add_argument('-d', '--debug', action='store_true',
                         help='Shortcut for --log DEBUG')
+    parser.add_argument('-w', '--warn', action='store_true',
+                        help='Shortcut for --log WARN')
     parser.add_argument('--verbose-rsync',
                         action='store_true',
                         help='Set --verbose option to rsync')
@@ -107,7 +109,9 @@ def _parse_args():
                         action='store',
                         type=str,
                         help=('If specified, store all DEBUG logs into'
-                              ' the file.'))
+                              ' the file. The log file\'s log level'
+                              ' is not affected by --log or relevant'
+                              ' log-level options.'))
     parser.add_argument('-t', '--src-type',
                         action='store',
                         type=str,
@@ -276,7 +280,7 @@ def _main_inter(args, logger):
         logger.info('Directory "{}" exists and writable.'
                     .format(org_base_dir))
     else:
-        logger.info('Directory "{}" does not exist. Try creating it.'
+        logger.info('Directory "{}" does not exist. Creating it.'
                     .format(org_base_dir))
         # If base_dir does not exists, check parent's dir.
         # If parent's dir exists, try creating base_dir.
@@ -295,7 +299,7 @@ def _main_inter(args, logger):
     today = datetime.datetime.today()
     dest_dir_path = _get_backup_dir_path(today, args.base_dir, args.dir_format)
     src_str = ', '.join(map(lambda x: '"{}"'.format(x), args.src))
-    logger.debug('Backup {} to "{}"'.format(src_str, dest_dir_path))
+    logger.debug('Backup "{}" to "{}"'.format(src_str, dest_dir_path))
 
     if args.removal_threshold > 0:
         first_index = args.removal_threshold + 1
@@ -334,6 +338,9 @@ def main():
     if args.debug:
         logger.setLevel(DEBUG)
         handler.setLevel(DEBUG)
+    elif args.warn:
+        logger.setLevel(WARN)
+        handler.setLevel(WARN)
     else:
         logger.setLevel(args.log)
         handler.setLevel(args.log)
