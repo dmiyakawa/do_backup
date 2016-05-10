@@ -22,7 +22,7 @@ import threading
 import time
 import traceback
 
-Version = '3.2.0'
+Version = '3.3.0'
 
 _DEFAULT_FULL_BACKUP_INTERVAL=35
 _DEFAULT_DIR='/mnt/disk0/backup'
@@ -62,7 +62,10 @@ def _parse_args():
                         type=str,
                         help=('Directory format for each daily backup.'),
                         default=_DEFAULT_DIR_FORMAT)
-    parser.add_argument('-i', '--interval',
+    parser.add_argument('-i', '--identity-file',
+                        type=str,
+                        help='Let ssh use this private key.')
+    parser.add_argument('--interval',
                         action='store',
                         type=int,
                         help=('Specifies how often full-backup occurs'
@@ -208,6 +211,15 @@ def _do_actual_backup(src_list, dest_dir_path, link_dir_path,
     options.extend(map(lambda x: '--exclude ' + x, excluded_dirs))
     if args.exclude_from:
         options.append(args.exclude_from)
+    if args.identity_file:
+        if not os.path.exists(args.identity_file):
+            err_msg = ('Identity file "{}" does not exist.'
+                       .format(args.identity_file))
+            raise RuntimeError(err_msg)
+        logger.debug('Using identity file "{}"'
+                     .format(args.identity_file))
+        options.append('-e "ssh -i {}"'.format(args.identity_file))
+
     cmd = '{} {} {} {}'.format(cmd_base, ' '.join(options),
                                ' '.join(src_list), dest_dir_path)
     logger.debug('Running: {}'.format(cmd))
@@ -234,6 +246,8 @@ def _do_actual_backup(src_list, dest_dir_path, link_dir_path,
         p.wait()
         stdout_thread.join()
         stderr_thread.join()
+        # Note: rsync itself mostly exist with non-0 status code,
+        # so the caller won't need to check this code anyway.
         return p.returncode
     finally:
         if stdout_file:
