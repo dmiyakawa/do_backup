@@ -22,7 +22,7 @@ import threading
 import time
 import traceback
 
-Version = '3.3.0'
+Version = '3.3.1'
 
 _DEFAULT_FULL_BACKUP_INTERVAL=35
 _DEFAULT_DIR='/mnt/disk0/backup'
@@ -375,7 +375,7 @@ def main():
             return
         file_handler = RotatingFileHandler(log_file,
                                            encoding='utf-8',
-                                           maxBytes=10*1024*1024,
+                                           maxBytes=30*1024*1024,
                                            backupCount=5)
         formatter = Formatter('%(asctime)s - %(levelname)s - %(message)s')
         file_handler.setFormatter(formatter)
