@@ -22,7 +22,7 @@ import threading
 import time
 import traceback
 
-Version = '3.3.1'
+Version = '3.3.2'
 
 _DEFAULT_FULL_BACKUP_INTERVAL=35
 _DEFAULT_DIR='/mnt/disk0/backup'
@@ -194,6 +194,9 @@ def _log_split(file_in, file_out, logger, prefix):
 
 def _do_actual_backup(src_list, dest_dir_path, link_dir_path,
                       excluded_dirs, logger, args):
+    '''
+    Returns exit status code of rsync command.
+    '''
     cmd_base = args.rsync_command
     if args.src_type == 'ssh':
         # Note: do not rely on archive mode (-a)
@@ -326,8 +329,19 @@ def _main_inter(args, logger):
     if args.exclude:
         excluded_dirs.extend(args.exclude)
     logger.debug('excluded files: {}'.format(', '.join(excluded_dirs)))
-    _do_actual_backup(args.src, dest_dir_path, link_dir_path,
-                      excluded_dirs, logger, args)
+    exit_code = _do_actual_backup(args.src, dest_dir_path, link_dir_path,
+                                  excluded_dirs, logger, args)
+    # On most cases, "ret" will never be 0 (Success), since rsync reports failure
+    # when even a single file copy fails.
+    # Here, we want to know if the rsync connection is established
+    # (i.e. if the target server is alive).
+    # Ok values (see also rsync(1))
+    # 0 ... Success
+    # 23 ... Partial transfer due to error
+    if exit_code not in [0, 23]:
+        logger.error('Exit code of rsync is not acceptable (code: {})'
+                     .format(exit_code))
+        return False
     return True
 
 
