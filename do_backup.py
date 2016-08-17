@@ -32,7 +32,7 @@ if sys.version_info[0] == 3:
     unicode = str
 
 
-Version = '3.3.3'
+Version = '3.4.0'
 
 _DEFAULT_FULL_BACKUP_INTERVAL = 35
 _DEFAULT_DIR = '/mnt/disk0/backup'
@@ -198,13 +198,12 @@ def _find_link_dir(today, args, logger):
 
 
 def _log_split(file_in, file_out, logger, prefix):
-    for line in iter(file_in.readline, ''):
+    for line in iter(file_in.readline, b''):
         if file_out:
             file_out.write(line)
             file_out.flush()
-        msg = prefix + unicode(line.rstrip(),
-                               encoding='utf-8',
-                               errors='replace')
+        uni_line = unicode(line, encoding='utf-8', errors='replace')
+        msg = prefix + uni_line.rstrip()
         logger.debug(msg)
 
 
@@ -418,6 +417,7 @@ def main():
     start_time = time.time()
     successful = False
     logger.info("Start running (Version: {})".format(Version))
+    logger.debug("Python version: {}".format(sys.version))
     logger.debug("src-type: {}".format(args.src_type))
     try:
         successful = _main_inter(args, logger)
