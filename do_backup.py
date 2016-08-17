@@ -417,7 +417,7 @@ def main():
     start_time = time.time()
     successful = False
     logger.info("Start running (Version: {} with Python {})"
-                .format(Version, sys.version))
+                .format(Version, platform.python_version()))
     logger.debug("src-type: {}".format(args.src_type))
     try:
         successful = _main_inter(args, logger)
