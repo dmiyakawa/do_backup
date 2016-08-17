@@ -1,14 +1,19 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 '''
 A script doing periodical backup.
 '''
 
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import argparse
 import datetime
 import dateutil.relativedelta
-from logging import getLogger,StreamHandler,Formatter
+from logging import getLogger, StreamHandler, Formatter
 from logging import DEBUG, WARN
 from logging.handlers import RotatingFileHandler
 import os
@@ -18,31 +23,37 @@ import subprocess
 import shlex
 import shutil
 import stat
+import sys
 import threading
 import time
 import traceback
 
-Version = '3.3.2'
+if sys.version_info[0] == 3:
+    unicode = str
 
-_DEFAULT_FULL_BACKUP_INTERVAL=35
-_DEFAULT_DIR='/mnt/disk0/backup'
-_DEFAULT_DIR_FORMAT='{hostname}-%Y%m%d'
-_DEFAULT_DIR_FORMAT_HOURLY='{hostname}-%Y%m%d-%H'
+
+Version = '3.3.3'
+
+_DEFAULT_FULL_BACKUP_INTERVAL = 35
+_DEFAULT_DIR = '/mnt/disk0/backup'
+_DEFAULT_DIR_FORMAT = '{hostname}-%Y%m%d'
+_DEFAULT_DIR_FORMAT_HOURLY = '{hostname}-%Y%m%d-%H'
 
 # Tries to remove backups those are older than this count (days or hours).
 # This script relies on the assumption that old backups keep
 # same directory name structure specified by dir-format.
 # If a user changes the directory format,
 # this script will just fail to detect/delete old backups.
-_DEFAULT_REMOVAL_THRESHOLD=35
+_DEFAULT_REMOVAL_THRESHOLD = 35
 # This script looks for old directories until this index.
-_DEFAULT_REMOVAL_SEARCH_THRESHOLD=100
+_DEFAULT_REMOVAL_SEARCH_THRESHOLD = 100
 
 _DEFAULT_EXCLUDED_DIR = ['/dev', '/proc', '/sys', '/tmp',
                          '/mnt', '/media', '/root', '/run',
                          '/lost+found',
                          '/var/backups',
                          '/root/.cache']
+
 
 def _parse_args():
     parser = argparse.ArgumentParser(
@@ -76,10 +87,11 @@ def _parse_args():
                         action='store',
                         type=int,
                         help=(('Specifies until when this script keeps'
-                               ' old backups. If this value is set to {example}'
+                               ' old backups.'
+                               ' If this value is set to {example}'
                                ' for example, backups {example} days ago'
-                               ' will be kept but those before it will be'
-                               ' removed.'
+                               ' will be kept but backups before that date'
+                               ' will be removed.'
                                ' 0 or less means no removal.')
                               .format(example=_DEFAULT_REMOVAL_THRESHOLD)),
                         default=_DEFAULT_REMOVAL_THRESHOLD)
@@ -136,7 +148,7 @@ def _get_backup_dir_path(thatday, base_dir, dir_format):
 
 def _get_backup_dir_name(thatday, dir_format):
     return thatday.strftime(dir_format.format(
-            hostname=platform.node()))
+        hostname=platform.node()))
 
 
 def _del_rw(function, path, exc):
@@ -157,14 +169,14 @@ def _remove_if_exists(dir_path, logger):
 
 def _remove_old_backups(today, base_dir, dir_format,
                         first_index, last_index, hourly, logger):
-    for i in xrange(first_index, last_index + 1):
+    for i in range(first_index, last_index + 1):
         if hourly:
             thatday = today - datetime.timedelta(hours=i)
         else:
             thatday = today - datetime.timedelta(days=i)
         dir_path = _get_backup_dir_path(thatday, base_dir, dir_format)
         _remove_if_exists(dir_path, logger)
-        
+
 
 def _find_link_dir(today, args, logger):
     '''
@@ -172,12 +184,13 @@ def _find_link_dir(today, args, logger):
     '''
     if args.interval <= 0:
         return None
-    for i in xrange(1, args.interval+1):
+    for i in range(1, args.interval + 1):
         if args.hourly:
             thatday = today - datetime.timedelta(hours=i)
         else:
             thatday = today - datetime.timedelta(days=i)
-        dir_path = _get_backup_dir_path(thatday, args.base_dir, args.dir_format)
+        dir_path = _get_backup_dir_path(thatday, args.base_dir,
+                                        args.dir_format)
         if (os.path.exists(dir_path) and os.path.isdir(dir_path)):
             logger.debug('Found link_dir {}'.format(dir_path))
             return dir_path
@@ -189,7 +202,8 @@ def _log_split(file_in, file_out, logger, prefix):
         if file_out:
             file_out.write(line)
             file_out.flush()
-        logger.debug(unicode(prefix + line.rstrip(), 'utf-8', errors='replace'))
+        logger.debug(unicode(prefix + line.rstrip(), 'utf-8',
+                             errors='replace'))
 
 
 def _do_actual_backup(src_list, dest_dir_path, link_dir_path,
@@ -279,7 +293,7 @@ def _main_inter(args, logger):
     org_base_dir = args.base_dir
     norm_base_dir = os.path.normpath(args.base_dir)
     logger.debug('Normalized base_dir: "{}"'.format(norm_base_dir))
-                
+
     if args.base_dir == "/":
         logger.error("base-dir looks root to me ({})"
                      .format(args.base_dir))
@@ -289,7 +303,7 @@ def _main_inter(args, logger):
         # If base_dir exists, check if it is a writable directory.
         if not os.path.isdir(norm_base_dir):
             logger.error('Path "{}" is not a directory'
-                         .format(org_norm_dir))
+                         .format(org_base_dir))
             return False
         if not os.access(norm_base_dir, os.W_OK):
             logger.error('Directory "{}" is not writable'
@@ -312,7 +326,7 @@ def _main_inter(args, logger):
     if args.base_dir == "/":
         logger.error("base-dir looks root to me ({})".format(args.base_dir))
         return False
-    
+
     today = datetime.datetime.today()
     dest_dir_path = _get_backup_dir_path(today, args.base_dir, args.dir_format)
     src_str = ', '.join(map(lambda x: '"{}"'.format(x), args.src))
@@ -331,8 +345,8 @@ def _main_inter(args, logger):
     logger.debug('excluded files: {}'.format(', '.join(excluded_dirs)))
     exit_code = _do_actual_backup(args.src, dest_dir_path, link_dir_path,
                                   excluded_dirs, logger, args)
-    # On most cases, "ret" will never be 0 (Success), since rsync reports failure
-    # when even a single file copy fails.
+    # On most cases, "ret" will never be 0 (Success), since rsync reports
+    # failure when even a single file copy fails.
     # Here, we want to know if the rsync connection is established
     # (i.e. if the target server is alive).
     # Ok values (see also rsync(1))
@@ -349,10 +363,13 @@ def _get_human_readable_time(elapsed):
     rd = dateutil.relativedelta.relativedelta(microseconds=elapsed*1000000)
     # Based on http://stackoverflow.com/questions/6574329/
     attrs = ['years', 'months', 'days', 'hours', 'minutes', 'seconds']
-    human_readable = lambda delta: ['%d %s' % (getattr(delta, attr),
-                                               getattr(delta, attr) > 1
-                                               and attr or attr[:-1]) 
-                                    for attr in attrs if getattr(delta, attr)]
+
+    def human_readable(delta):
+        return ['%d %s' % (getattr(delta, attr),
+                           getattr(delta, attr) > 1
+                           and attr or attr[:-1])
+                for attr in attrs if getattr(delta, attr)]
+
     return ' '.join(human_readable(rd))
 
 
@@ -399,6 +416,7 @@ def main():
     start_time = time.time()
     successful = False
     logger.info("Start running (Version: {})".format(Version))
+    logger.debug("src-type: {}".format(args.src_type))
     try:
         successful = _main_inter(args, logger)
     except KeyboardInterrupt:
@@ -422,5 +440,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
