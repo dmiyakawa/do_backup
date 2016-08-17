@@ -202,9 +202,9 @@ def _log_split(file_in, file_out, logger, prefix):
         if file_out:
             file_out.write(line)
             file_out.flush()
-        msg = unicode(prefix + line.rstrip(),
-                      encoding='utf-8',
-                      errors='replace')
+        msg = prefix + unicode(line.rstrip(),
+                               encoding='utf-8',
+                               errors='replace')
         logger.debug(msg)
 
 
