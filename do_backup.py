@@ -202,8 +202,10 @@ def _log_split(file_in, file_out, logger, prefix):
         if file_out:
             file_out.write(line)
             file_out.flush()
-        logger.debug(unicode(prefix + line.rstrip(), 'utf-8',
-                             errors='replace'))
+        msg = unicode(prefix + line.rstrip(),
+                      encoding='utf-8',
+                      errors='replace')
+        logger.debug(msg)
 
 
 def _do_actual_backup(src_list, dest_dir_path, link_dir_path,
@@ -328,9 +330,9 @@ def _main_inter(args, logger):
         return False
 
     today = datetime.datetime.today()
-    dest_dir_path = _get_backup_dir_path(today, args.base_dir, args.dir_format)
     src_str = ', '.join(map(lambda x: '"{}"'.format(x), args.src))
-    logger.debug('Backup "{}" to "{}"'.format(src_str, dest_dir_path))
+    dest_dir_path = _get_backup_dir_path(today, args.base_dir, args.dir_format)
+    logger.debug('Backup {} to "{}"'.format(src_str, dest_dir_path))
 
     if args.removal_threshold > 0:
         first_index = args.removal_threshold + 1
