@@ -32,7 +32,7 @@ if sys.version_info[0] == 3:
     unicode = str
 
 
-Version = '3.4.0'
+Version = '3.4.1'
 
 _DEFAULT_FULL_BACKUP_INTERVAL = 35
 _DEFAULT_DIR = '/mnt/disk0/backup'
@@ -309,8 +309,8 @@ def _main_inter(args, logger):
         if not os.access(norm_base_dir, os.W_OK):
             logger.error('Directory "{}" is not writable'
                          .format(org_base_dir))
-        logger.info('Directory "{}" exists and writable.'
-                    .format(org_base_dir))
+        logger.debug('Directory "{}" exists and writable.'
+                     .format(org_base_dir))
     else:
         logger.info('Directory "{}" does not exist. Creating it.'
                     .format(org_base_dir))
@@ -416,8 +416,8 @@ def main():
         logger.addHandler(file_handler)
     start_time = time.time()
     successful = False
-    logger.info("Start running (Version: {})".format(Version))
-    logger.debug("Python version: {}".format(sys.version))
+    logger.info("Start running (Version: {} with Python {})"
+                .format(Version, sys.version))
     logger.debug("src-type: {}".format(args.src_type))
     try:
         successful = _main_inter(args, logger)
