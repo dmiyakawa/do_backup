@@ -11,7 +11,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import argparse
-import datetime
+from datetime import datetime, timedelta
 import dateutil.relativedelta
 from logging import getLogger, StreamHandler, Formatter
 from logging import DEBUG, WARN
@@ -171,9 +171,9 @@ def _remove_old_backups(today, base_dir, dir_format,
                         first_index, last_index, hourly, logger):
     for i in range(first_index, last_index + 1):
         if hourly:
-            thatday = today - datetime.timedelta(hours=i)
+            thatday = today - timedelta(hours=i)
         else:
-            thatday = today - datetime.timedelta(days=i)
+            thatday = today - timedelta(days=i)
         dir_path = _get_backup_dir_path(thatday, base_dir, dir_format)
         _remove_if_exists(dir_path, logger)
 
@@ -186,9 +186,9 @@ def _find_link_dir(today, args, logger):
         return None
     for i in range(1, args.interval + 1):
         if args.hourly:
-            thatday = today - datetime.timedelta(hours=i)
+            thatday = today - timedelta(hours=i)
         else:
-            thatday = today - datetime.timedelta(days=i)
+            thatday = today - timedelta(days=i)
         dir_path = _get_backup_dir_path(thatday, args.base_dir,
                                         args.dir_format)
         if (os.path.exists(dir_path) and os.path.isdir(dir_path)):
@@ -328,7 +328,7 @@ def _main_inter(args, logger):
         logger.error("base-dir looks root to me ({})".format(args.base_dir))
         return False
 
-    today = datetime.datetime.today()
+    today = datetime.today()
     src_str = ', '.join(map(lambda x: '"{}"'.format(x), args.src))
     dest_dir_path = _get_backup_dir_path(today, args.base_dir, args.dir_format)
     logger.debug('Backup {} to "{}"'.format(src_str, dest_dir_path))
