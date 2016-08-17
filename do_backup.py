@@ -418,6 +418,8 @@ def main():
     successful = False
     logger.info("Start running (Version: {} with Python {})"
                 .format(Version, platform.python_version()))
+    logger.debug("Detailed Python version: {}"
+                 .format(sys.version.replace('\n', ' ')))
     logger.debug("src-type: {}".format(args.src_type))
     try:
         successful = _main_inter(args, logger)
