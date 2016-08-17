@@ -433,7 +433,10 @@ def main():
     end_time = time.time()
     elapsed = end_time - start_time
     human_readable = _get_human_readable_time(elapsed)
-    logger.info('Elapsed: {:.3f} sec ({})'.format(elapsed, human_readable))
+    if human_readable:
+        logger.info('Elapsed: {:.3f} sec ({})'.format(elapsed, human_readable))
+    else:
+        logger.info('Elapsed: {:.3f} sec'.format(elapsed))
 
     if successful:
         logger.info('Finished running successfully at {}'
