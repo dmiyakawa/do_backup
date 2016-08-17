@@ -416,8 +416,9 @@ def main():
         logger.addHandler(file_handler)
     start_time = time.time()
     successful = False
-    logger.info("Start running (Version: {} with Python {})"
-                .format(Version, platform.python_version()))
+    logger.info("Start running at {} ({} with Python {})"
+                .format(datetime.fromtimestamp(start_time).isoformat(),
+                        Version, platform.python_version()))
     logger.debug("Detailed Python version: {}"
                  .format(sys.version.replace('\n', ' ')))
     logger.debug("src-type: {}".format(args.src_type))
@@ -432,14 +433,14 @@ def main():
     end_time = time.time()
     elapsed = end_time - start_time
     human_readable = _get_human_readable_time(elapsed)
-    logger.debug('Elapsed: {:.3f} sec ({})'.format(elapsed, human_readable))
+    logger.info('Elapsed: {:.3f} sec ({})'.format(elapsed, human_readable))
 
     if successful:
-        logger.info('Finished running {} successfully'
-                    .format(os.path.basename(__file__)))
+        logger.info('Finished running successfully at {}'
+                    .format(datetime.fromtimestamp(end_time).isoformat()))
     else:
-        logger.error('Failed to running {}'
-                     .format(os.path.basename(__file__)))
+        logger.error('Failed running (ended at {})'
+                     .format(datetime.fromtimestamp(end_time).isoformat()))
 
 
 if __name__ == '__main__':
