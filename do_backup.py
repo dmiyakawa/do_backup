@@ -431,19 +431,18 @@ def main():
         logger.error(traceback.format_exc())
         raise
     end_time = time.time()
-    elapsed = end_time - start_time
-    human_readable = _get_human_readable_time(elapsed)
-    if human_readable:
-        logger.info('Elapsed: {:.3f} sec ({})'.format(elapsed, human_readable))
-    else:
-        logger.info('Elapsed: {:.3f} sec'.format(elapsed))
-
     if successful:
         logger.info('Finished running successfully at {}'
                     .format(datetime.fromtimestamp(end_time).isoformat()))
     else:
         logger.error('Failed running (ended at {})'
                      .format(datetime.fromtimestamp(end_time).isoformat()))
+    elapsed = end_time - start_time
+    human_readable = _get_human_readable_time(elapsed)
+    if human_readable:
+        logger.info('Elapsed: {:.3f} sec ({})'.format(elapsed, human_readable))
+    else:
+        logger.info('Elapsed: {:.3f} sec'.format(elapsed))
 
 
 if __name__ == '__main__':
