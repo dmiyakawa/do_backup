@@ -32,7 +32,7 @@ if sys.version_info[0] == 3:
     unicode = str
 
 
-Version = '3.4.1'
+Version = '3.4.2'
 
 _DEFAULT_FULL_BACKUP_INTERVAL = 35
 _DEFAULT_DIR = '/mnt/disk0/backup'
@@ -52,6 +52,7 @@ _DEFAULT_EXCLUDED_DIR = ['/dev', '/proc', '/sys', '/tmp',
                          '/mnt', '/media', '/root', '/run',
                          '/lost+found',
                          '/var/backups',
+                         '/var/tmp',
                          '/root/.cache']
 
 
