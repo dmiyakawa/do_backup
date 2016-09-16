@@ -32,7 +32,7 @@ if sys.version_info[0] == 3:
     unicode = str
 
 
-Version = '3.4.1'
+Version = '3.4.2'
 
 _DEFAULT_FULL_BACKUP_INTERVAL = 35
 _DEFAULT_DIR = '/mnt/disk0/backup'
@@ -53,6 +53,8 @@ _DEFAULT_EXCLUDED_DIR = ['/dev', '/proc', '/sys', '/tmp',
                          '/lost+found',
                          '/var/backups',
                          '/root/.cache']
+
+_DEFAULT_INCLUDED_DIR = ['/var/log']
 
 
 def _parse_args():
@@ -102,12 +104,19 @@ def _parse_args():
     parser.add_argument('-e', '--exclude',
                         action='append',
                         type=str,
-                        help=('Files(dirs) that should excluded in addition'
-                              ' to default list.'))
+                        help=('Files(dirs) that should be excluded'
+                              ' in addition to default exclusion list.'))
     parser.add_argument('--exclude-from',
                         action='store',
                         type=str,
                         help=("A file specifying files(dirs) to be ignored."))
+    parser.add_argument('--include',
+                        action='append',
+                        type=str,
+                        help=('Files(dirs) that should be included'
+                              ' as backup.'
+                              ' Note --include is prioritized over'
+                              ' --exclude.'))
     parser.add_argument('--log',
                         action='store',
                         type=str,
@@ -208,7 +217,7 @@ def _log_split(file_in, file_out, logger, prefix):
 
 
 def _do_actual_backup(src_list, dest_dir_path, link_dir_path,
-                      excluded_dirs, logger, args):
+                      included_dirs, excluded_dirs, logger, args):
     '''
     Returns exit status code of rsync command.
     '''
@@ -226,6 +235,7 @@ def _do_actual_backup(src_list, dest_dir_path, link_dir_path,
         options.append('--verbose')
     if link_dir_path:
         options.append('--link-dest={}'.format(link_dir_path))
+    options.extend(map(lambda x: '--include ' + x, included_dirs))
     options.extend(map(lambda x: '--exclude ' + x, excluded_dirs))
     if args.exclude_from:
         options.append(args.exclude_from)
@@ -340,12 +350,16 @@ def _main_inter(args, logger):
                             first_index, last_index,
                             args.hourly, logger)
     link_dir_path = _find_link_dir(today, args, logger)
+    included_dirs = _DEFAULT_INCLUDED_DIR
+    if args.include:
+        included_dirs.extend(args.include)
     excluded_dirs = _DEFAULT_EXCLUDED_DIR
     if args.exclude:
         excluded_dirs.extend(args.exclude)
+    logger.debug('included files: {}'.format(', '.join(excluded_dirs)))
     logger.debug('excluded files: {}'.format(', '.join(excluded_dirs)))
     exit_code = _do_actual_backup(args.src, dest_dir_path, link_dir_path,
-                                  excluded_dirs, logger, args)
+                                  included_dirs, excluded_dirs, logger, args)
     # On most cases, "ret" will never be 0 (Success), since rsync reports
     # failure when even a single file copy fails.
     # Here, we want to know if the rsync connection is established
