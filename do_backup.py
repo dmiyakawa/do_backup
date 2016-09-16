@@ -32,7 +32,7 @@ if sys.version_info[0] == 3:
     unicode = str
 
 
-Version = '3.4.3'
+Version = '3.4.4'
 
 _DEFAULT_FULL_BACKUP_INTERVAL = 35
 _DEFAULT_DIR = '/mnt/disk0/backup'
@@ -48,14 +48,14 @@ _DEFAULT_REMOVAL_THRESHOLD = 35
 # This script looks for old directories until this index.
 _DEFAULT_REMOVAL_SEARCH_THRESHOLD = 100
 
+_DEFAULT_INCLUDED_DIR = ['/var/log', '/var/lib']
+
 _DEFAULT_EXCLUDED_DIR = ['/dev', '/proc', '/sys', '/tmp',
                          '/mnt', '/media', '/root', '/run',
                          '/lost+found',
                          '/var/backups',
                          '/var/tmp',
                          '/root/.cache']
-
-_DEFAULT_INCLUDED_DIR = ['/var/log', '/var/lib']
 
 
 def _parse_args():
@@ -118,6 +118,9 @@ def _parse_args():
                               ' as backup.'
                               ' Note --include is prioritized over'
                               ' --exclude.'))
+    parser.add_argument('--chdir', action='store',
+                        help=('Change working directory to the'
+                              ' specified location before running rsync.'))
     parser.add_argument('--log',
                         action='store',
                         type=str,
@@ -253,6 +256,15 @@ def _do_actual_backup(src_list, dest_dir_path, link_dir_path,
                                ' '.join(src_list), dest_dir_path)
     logger.debug('Running: {}'.format(cmd))
     args = shlex.split(cmd)
+
+    if args.chdir:
+        chdir_path = os.path.abspath(args.chdir)
+        logger.debug('chdir to "{}"'.format(chdir_path))
+        os.chdir(chdir_path)
+        changed_cwd = os.path.abspath(os.getcwd())
+        if chdir_path != changed_cwd:
+            logger.warn('Failed to move to "{}". We\'re still in "{}"'
+                        .format(chdir_path, changed_cwd))
 
     # At this point both stdout and stderr will be just printed
     # using logger.debug(). No separate files will be created.
