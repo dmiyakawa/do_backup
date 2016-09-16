@@ -55,7 +55,7 @@ _DEFAULT_EXCLUDED_DIR = ['/dev', '/proc', '/sys', '/tmp',
                          '/var/tmp',
                          '/root/.cache']
 
-_DEFAULT_INCLUDED_DIR = ['/var/log']
+_DEFAULT_INCLUDED_DIR = ['/var/log', '/var/lib']
 
 
 def _parse_args():
