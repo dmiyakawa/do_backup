@@ -32,7 +32,7 @@ if sys.version_info[0] == 3:
     unicode = str
 
 
-Version = '3.4.6'
+Version = '3.5.0'
 
 _DEFAULT_FULL_BACKUP_INTERVAL = 35
 _DEFAULT_DIR = '/mnt/disk0/backup'
@@ -54,7 +54,8 @@ _DEFAULT_INCLUDED_DIR = []
 _DEFAULT_EXCLUDED_DIR = ['/dev', '/proc', '/sys', '/tmp',
                          '/mnt', '/media', '/root', '/run',
                          '/lost+found',
-                         '/var/lock', '/var/tmp', '/var/run']
+                         '/var/lock', '/var/tmp', '/var/run',
+                         '/backup']
 
 
 def _parse_args():
