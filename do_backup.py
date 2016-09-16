@@ -52,6 +52,7 @@ _DEFAULT_EXCLUDED_DIR = ['/dev', '/proc', '/sys', '/tmp',
                          '/mnt', '/media', '/root', '/run',
                          '/lost+found',
                          '/var/backups',
+                         '/var/tmp',
                          '/root/.cache']
 
 _DEFAULT_INCLUDED_DIR = ['/var/log']
