@@ -210,7 +210,7 @@ def _del_rw(function, path, exc_info, logger=None):
             cur_path = os.path.dirname(cur_path)
         while target_dirs_stack:
             cur_path = target_dirs_stack.pop()
-            if not os.access(cur_path):
+            if not os.access(cur_path, os.X_OK):
                 logger.debug('"{}" is not accessible. Try modifying it.'
                              .format(cur_path))
                 if os.geteuid() == os.stat(cur_path).st_uid:
