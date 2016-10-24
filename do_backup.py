@@ -318,20 +318,19 @@ def _do_actual_backup(src_list, dest_dir_path, link_dir_path,
     cmd = '{} {} {} {}'.format(cmd_base, ' '.join(options),
                                ' '.join(src_list), dest_dir_path)
     logger.debug('Running: {}'.format(cmd))
-    args = shlex.split(cmd)
-
+    if args.log_rsync_output:
+        t_logger = logger
+    else:
+        t_logger = _null_logger
+    exec_args = shlex.split(cmd)
     stdout_thread = None
     stderr_thread = None
     try:
         # Start executing rsync and track its output asynchronously.
         # Two separate threads will do that job.
-        p = subprocess.Popen(args,
+        p = subprocess.Popen(exec_args,
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)
-        if args.log_rsync_output:
-            t_logger = logger
-        else:
-            t_logger = _null_logger
         stdout_args = (p.stdout, t_logger, '{}(stdout): '.format(args[0]))
         stderr_args = (p.stderr, t_logger, '{}(stderr): '.format(args[0]))
         stdout_thread = threading.Thread(target=_log_thread, args=stdout_args)
