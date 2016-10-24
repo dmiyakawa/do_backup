@@ -164,28 +164,33 @@ def _get_backup_dir_name(thatday, dir_format):
         hostname=platform.node()))
 
 
-def _is_permission_error(exc):
+def _is_permission_error(e):
     """\
-    例外がアクセス権限のものであればTrue、そうでなければFalseを返す
+    受け取った例外がアクセス権限のものであればTrue、そうでなければFalseを返す
     """
     # See PEP 3151
     if sys.version_info[0:2] < (3, 2):
-        return (isinstance(exc, OSError) or isinstance(exc, IOError)
-                and str(exc.args[0]) == '13')
+        return (isinstance(e, OSError) or isinstance(e, IOError)
+                and e.args[0] == 13)
     else:
-        return isinstance(exc, PermissionError)
+        return isinstance(e, PermissionError)
 
 
-def _del_rw(function, path, exc, logger=None):
+def _del_rw(function, path, exc_info, logger=None):
     """\
     ディレクトリツリー上でpathの親以上にあたるディレクトリを
     ルートから辿り、アクセス権限があるかを確認する。
     また親ディレクトリについては書き込み権限があることを確認する。
+
+    この関数はshutil.rmtree()のonerrorキーワード引数に与えられることを
+    前提にしている。functionは例外を送出した関数、
+    path は function に渡されたパス名、
+    exc_info は (type, value, traceback) となる。
     """
     logger = logger or _null_logger
-    if _is_permission_error(exc):
-        logger.debug('Possibly permission denied to access "{}".'
-                     .format(path))
+    if _is_permission_error(exc_info[1]):
+        logger.debug('Permission denied (path: "{}", exc_info: {})'
+                     .format(path, exc_info))
         # 消せない理由は親以上のディレクトリにアクセス権限がないか
         # 親が書き込み不可能か。
         # よってルートから順番に書き込み権限を強制付与する。
@@ -208,16 +213,15 @@ def _del_rw(function, path, exc, logger=None):
                     logger.error('Unable to access "{}" while the owner'
                                  ' is different from current user (euid: {})'
                                  .format(cur_path, os.geteuid()))
-                    raise exc
+                    raise exc_info[1]
             if (cur_path == parent_dir_path
                 and not (os.stat(cur_path).st_mode & stat.S_IWUSR)):
                 os.chmod(cur_path,
                          os.stat(cur_path).st_mode | stat.S_IWUSR)
         function(path)
     else:
-        logger.debug('Unacceptable exception ({})'.format(exc))
-        logger.debug('args: {}'.format(exc.args))
-        raise exc
+        logger.debug('Unacceptable exception (exc_info: {})'.format(exc_info))
+        raise exc_info[1]
 
 
 def _remove_old_backups_if_exist(today, base_dir, dir_format,
