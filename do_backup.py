@@ -229,6 +229,7 @@ def _remove_old_backups(today, base_dir, dir_format,
         else:
             thatday = today - timedelta(days=i)
         dir_path = _get_backup_dir_path(thatday, base_dir, dir_format)
+        logger.info('Removing old backup "{}"'.format(dir_path))
         _remove_if_exists(dir_path, logger)
 
 
