@@ -205,7 +205,7 @@ def _del_rw(function, path, exc_info, logger=None):
         target_dirs_stack = []
         parent_dir_path = os.path.dirname(path)
         cur_path = parent_dir_path
-        while cur_path:
+        while cur_path != '/':
             target_dirs_stack.append(cur_path)
             cur_path = os.path.dirname(cur_path)
         while target_dirs_stack:
