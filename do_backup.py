@@ -514,7 +514,7 @@ def main():
     try:
         successful = _main_inter(args, logger)
     except KeyboardInterrupt:
-        logger.error('Interrupted. Exitting.')
+        logger.error('Keyboard-interrupted. Exitting.')
         return
     except Exception:
         logger.error(traceback.format_exc())
