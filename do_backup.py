@@ -86,7 +86,7 @@ def _parse_args():
                               ' (unit: days).'
                               ' 0 or less implies "force full-backup."'),
                         default=_DEFAULT_FULL_BACKUP_INTERVAL)
-    parser.add_argument('-t', '--removal-threshold',
+    parser.add_argument('--removal-threshold',
                         action='store',
                         type=int,
                         help=(('Specifies until when this script keeps'
