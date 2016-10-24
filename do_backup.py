@@ -184,6 +184,8 @@ def _del_rw(function, path, exc, logger=None):
     """
     logger = logger or _null_logger
     if _is_permission_error(exc):
+        logger.debug('Possibly permission denied to access "{}".'
+                     .format(path))
         # 消せない理由は親以上のディレクトリにアクセス権限がないか
         # 親が書き込み不可能か。
         # よってルートから順番に書き込み権限を強制付与する。
@@ -203,9 +205,9 @@ def _del_rw(function, path, exc, logger=None):
                     os.chmod(cur_path,
                              os.stat(cur_path).st_mode | stat.S_IXUSR)
                 else:
-                    # アクセス権がなくオーナーでもないディレクトリが
-                    # 間に挟まっている。
-                    # この場合、pathは削除出来ないと考えて例外を送出する
+                    logger.error('Unable to access "{}" while the owner'
+                                 ' is different from current user (euid: {})'
+                                 .format(cur_path, os.geteuid()))
                     raise exc
             if (cur_path == parent_dir_path
                 and not (os.stat(cur_path).st_mode & stat.S_IWUSR)):
@@ -213,7 +215,8 @@ def _del_rw(function, path, exc, logger=None):
                          os.stat(cur_path).st_mode | stat.S_IWUSR)
         function(path)
     else:
-        raise
+        logger.debug('Unacceptable exception ({})'.format(exc))
+        raise exc
 
 
 def _remove_old_backups_if_exist(today, base_dir, dir_format,
@@ -230,7 +233,9 @@ def _remove_old_backups_if_exist(today, base_dir, dir_format,
                             .format(dir_path))
                 continue
             logger.info('Removing old backup "{}"'.format(dir_path))
-            shutil.rmtree(dir_path, onerror=_del_rw)
+            shutil.rmtree(dir_path,
+                          onerror=lambda a, b, c: _del_rw(a, b, c,
+                                                          logger=logger))
             logger.debug('Finished removing "{}"'.format(dir_path))
         else:
             logger.debug('"{}" does not exist.'.format(dir_path))
