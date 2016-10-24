@@ -189,7 +189,8 @@ def _del_rw(function, path, exc_info, logger=None):
     """
     logger = logger or _null_logger
     if _is_permission_error(exc_info[1]):
-        logger.debug('Permission denied (path: "{}", exc_info: {})'
+        logger.debug('Permission denied found (path: "{}", exc_info: {}).'
+                     ' Try fixing the permission.'
                      .format(path, exc_info))
         # 消せない理由は親以上のディレクトリにアクセス権限がないか
         # 親が書き込み不可能か。
@@ -206,6 +207,8 @@ def _del_rw(function, path, exc_info, logger=None):
         while target_dirs_stack:
             cur_path = target_dirs_stack.pop()
             if not os.access(cur_path):
+                logger.debug('"{}" is not accessible. Try modifying it.'
+                             .format(cur_path))
                 if os.geteuid() == os.stat(cur_path).st_uid:
                     os.chmod(cur_path,
                              os.stat(cur_path).st_mode | stat.S_IXUSR)
@@ -216,9 +219,13 @@ def _del_rw(function, path, exc_info, logger=None):
                     raise exc_info[1]
             if (cur_path == parent_dir_path
                 and not (os.stat(cur_path).st_mode & stat.S_IWUSR)):
+                logger.debug('"{}" is not writable. Try modifying it.'
+                             .format(cur_path))
                 os.chmod(cur_path,
                          os.stat(cur_path).st_mode | stat.S_IWUSR)
         function(path)
+        logger.debug('Successfully fixed permission problem (path: {})'
+                     .format(path))
     else:
         logger.debug('Unacceptable exception (exc_info: {})'.format(exc_info))
         raise exc_info[1]
