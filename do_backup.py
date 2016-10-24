@@ -33,7 +33,7 @@ if sys.version_info[0] == 3:
 
 Version = '3.6.0'
 
-_DEFAULT_FULL_BACKUP_INTERVAL = 31
+_FULL_BACKUP_INTERVAL = 30
 _DEFAULT_DIR = '/mnt/disk0/backup'
 _DEFAULT_DIR_FORMAT = '{hostname}-%Y%m%d'
 _DEFAULT_DIR_FORMAT_HOURLY = '{hostname}-%Y%m%d-%H'
@@ -41,9 +41,9 @@ _DEFAULT_DIR_FORMAT_HOURLY = '{hostname}-%Y%m%d-%H'
 # Tries to remove backups those are older than this count (days or hours).
 # This script relies on the assumption that old backups keep
 # same directory name structure specified by dir-format.
-# If a user changes the directory format,
+# If a user changes the directory name format,
 # this script will just fail to detect/delete old backups.
-_DEFAULT_REMOVAL_THRESHOLD = 35
+_DEFAULT_REMOVAL_THRESHOLD = 31
 # This script looks for old directories until this index.
 _DEFAULT_REMOVAL_SEARCH_THRESHOLD = 100
 
@@ -82,14 +82,12 @@ def _parse_args():
     parser.add_argument('-i', '--identity-file',
                         type=str,
                         help='Let ssh use this private key.')
-    parser.add_argument('--interval',
-                        action='store',
-                        type=int,
-                        help=('Specifies how often full-backup occurs'
-                              ' (unit: days).'
-                              ' 0 or less implies "force full-backup."'),
-                        default=_DEFAULT_FULL_BACKUP_INTERVAL)
-    parser.add_argument('--removal-threshold',
+    parser.add_argument('-f', '--force-full-backup',
+                        action='store_true',
+                        help=('Do not use --link-dest even when precedeng'
+                              ' backup directory exists, consuming much more'
+                              ' disk possibly.'))
+    parser.add_argument('-r', '--removal-threshold',
                         action='store',
                         type=int,
                         help=(('Specifies until when this script keeps'
@@ -236,7 +234,9 @@ def _del_rw(function, path, exc_info, logger=None):
 
 
 def _remove_old_backups_if_exist(today, base_dir, dir_format,
-                                 first_index, last_index, hourly, logger):
+                                 first_index, last_index, hourly,
+                                 logger=None):
+    logger = logger or _null_logger
     for i in range(first_index, last_index + 1):
         if hourly:
             thatday = today - timedelta(hours=i)
@@ -257,21 +257,20 @@ def _remove_old_backups_if_exist(today, base_dir, dir_format,
             logger.debug('"{}" does not exist.'.format(dir_path))
 
 
-def _find_link_dir(today, args, logger):
-    '''
-    Find a directory that will be used with --link-dest option.
-    '''
-    if args.interval <= 0:
-        return None
-    for i in range(1, args.interval + 1):
-        if args.hourly:
+def _find_link_dir(today, base_dir, dir_format,
+                   first_index, last_index, is_hourly_backup,
+                   logger=None):
+    """\
+    Finds the directory that will be used with --link-dest option.
+    """
+    logger = logger or _null_logger
+    for i in range(first_index, last_index + 1):
+        if is_hourly_backup:
             thatday = today - timedelta(hours=i)
         else:
             thatday = today - timedelta(days=i)
-        dir_path = _get_backup_dir_path(thatday, args.base_dir,
-                                        args.dir_format)
-        if (os.path.exists(dir_path) and os.path.isdir(dir_path)):
-            logger.debug('Found link_dir {}'.format(dir_path))
+        dir_path = _get_backup_dir_path(thatday, base_dir, dir_format)
+        if os.path.isdir(dir_path):
             return dir_path
     return None
 
@@ -420,8 +419,19 @@ def _main_inter(args, logger):
         last_index = _DEFAULT_REMOVAL_SEARCH_THRESHOLD
         _remove_old_backups_if_exist(today, args.base_dir, args.dir_format,
                                      first_index, last_index,
-                                     args.hourly, logger)
-    link_dir_path = _find_link_dir(today, args, logger)
+                                     args.hourly, logger=logger)
+    if args.force_full_backup:
+        logger.debug('Force full-backup')
+    else:
+        link_dir_path = _find_link_dir(today, args.base_dir, args.dir_format,
+                                       1, args.removal_threshold, args.hourly,
+                                       logger=logger)
+        if link_dir_path:
+            logger.debug('Will hardlink to "{}" with --link-dest'
+                         .format(link_dir_path))
+        else:
+            logger.debug('Did not found a precedent backup.'
+                         ' Will do full-backup')
     included_dirs = _DEFAULT_INCLUDED_DIR
     if args.include:
         included_dirs.extend(args.include)
