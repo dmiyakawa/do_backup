@@ -331,8 +331,8 @@ def _do_actual_backup(src_list, dest_dir_path, link_dir_path,
         p = subprocess.Popen(exec_args,
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)
-        stdout_args = (p.stdout, t_logger, '{}(stdout): '.format(args[0]))
-        stderr_args = (p.stderr, t_logger, '{}(stderr): '.format(args[0]))
+        stdout_args = (p.stdout, t_logger, '{}(stdout): '.format(exec_args[0]))
+        stderr_args = (p.stderr, t_logger, '{}(stderr): '.format(exec_args[0]))
         stdout_thread = threading.Thread(target=_log_thread, args=stdout_args)
         stderr_thread = threading.Thread(target=_log_thread, args=stderr_args)
         stdout_thread.start()
