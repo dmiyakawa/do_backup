@@ -128,8 +128,9 @@ def _parse_args():
                         help='Shortcut for --log DEBUG')
     parser.add_argument('-w', '--warn', action='store_true',
                         help='Shortcut for --log WARN')
-    parser.add_argument('--verbose-rsync',
-                        action='store_true',
+    parser.add_argument('-l', '--log-rsync-output', action='store_true',
+                        help='Include rsync output to DEBUG log')
+    parser.add_argument('--verbose-rsync', action='store_true',
                         help='Set --verbose option to rsync')
     parser.add_argument('--verbose-log-file',
                         action='store',
@@ -275,11 +276,8 @@ def _find_link_dir(today, base_dir, dir_format,
     return None
 
 
-def _log_split(file_in, file_out, logger, prefix):
+def _log_thread(file_in, logger, prefix):
     for line in iter(file_in.readline, b''):
-        if file_out:
-            file_out.write(line)
-            file_out.flush()
         uni_line = unicode(line, encoding='utf-8', errors='replace')
         msg = prefix + uni_line.rstrip()
         logger.debug(msg)
@@ -322,39 +320,35 @@ def _do_actual_backup(src_list, dest_dir_path, link_dir_path,
     logger.debug('Running: {}'.format(cmd))
     args = shlex.split(cmd)
 
-    # At this point both stdout and stderr will be just printed
-    # using logger.debug(). No separate files will be created.
-    stdout_file = None
-    stderr_file = None
+    stdout_thread = None
+    stderr_thread = None
     try:
         # Start executing rsync and track its output asynchronously.
         # Two separate threads will do that job.
         p = subprocess.Popen(args,
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)
-        stdout_arg = (p.stdout, stdout_file, logger,
-                      '{}(stdout): '.format(args[0]))
-        stderr_arg = (p.stderr, stderr_file, logger,
-                      '{}(stderr): '.format(args[0]))
-        stdout_thread = threading.Thread(target=_log_split, args=stdout_arg)
-        stderr_thread = threading.Thread(target=_log_split, args=stderr_arg)
+        if args.log_rsync_output:
+            t_logger = logger
+        else:
+            t_logger = _null_logger
+        stdout_args = (p.stdout, t_logger, '{}(stdout): '.format(args[0]))
+        stderr_args = (p.stderr, t_logger, '{}(stderr): '.format(args[0]))
+        stdout_thread = threading.Thread(target=_log_thread, args=stdout_args)
+        stderr_thread = threading.Thread(target=_log_thread, args=stderr_args)
         stdout_thread.start()
         stderr_thread.start()
         p.wait()
-        stdout_thread.join()
-        stderr_thread.join()
         # Note: rsync itself mostly exist with non-0 status code,
         # so the caller won't need to check this code anyway.
         return p.returncode
     finally:
-        if stdout_file:
-            stdout_file.close()
-        if stderr_file:
-            stderr_file.close()
-        if stdout_thread and stdout_thread.is_alive():
-            logger.warn('Thread for stdout is still alive.')
-        if stderr_thread and stderr_thread.is_alive():
-            logger.warn('Thread for stderr is still alive.')
+        logger.debug('Waiting for threads\' exiting.')
+        if stdout_thread:
+            stdout_thread.join()
+        if stderr_thread:
+            stderr_thread.join()
+        logger.debug('Confirmed threads exited.')
 
 
 def _main_inter(args, logger):
