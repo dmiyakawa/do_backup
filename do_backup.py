@@ -171,7 +171,7 @@ def _is_permission_error(exc):
     # See PEP 3151
     if sys.version_info[0:2] < (3, 2):
         return (isinstance(exc, OSError) or isinstance(exc, IOError)
-                and exc.args[0] == 13)
+                and str(exc.args[0]) == '13')
     else:
         return isinstance(exc, PermissionError)
 
@@ -216,6 +216,7 @@ def _del_rw(function, path, exc, logger=None):
         function(path)
     else:
         logger.debug('Unacceptable exception ({})'.format(exc))
+        logger.debug('args: {}'.format(exc.args))
         raise exc
 
 
