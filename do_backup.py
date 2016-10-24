@@ -32,7 +32,7 @@ if sys.version_info[0] == 3:
     unicode = str
 
 
-Version = '3.5.0'
+Version = '3.5.1'
 
 _DEFAULT_FULL_BACKUP_INTERVAL = 35
 _DEFAULT_DIR = '/mnt/disk0/backup'
@@ -161,11 +161,55 @@ def _get_backup_dir_name(thatday, dir_format):
         hostname=platform.node()))
 
 
+def _is_permission_error(exc):
+    """\
+    例外がアクセス権限のものであればTrue、そうでなければFalseを返す
+    """
+    # See PEP 3151
+    if sys.version_info[0:2] < (3, 2):
+        return (isinstance(exc, OSError) or isinstance(exc, IOError)
+                and exc.args[0] == 13)
+    else:
+        return isinstance(exc, PermissionError)
+
+
 def _del_rw(function, path, exc):
-    os.chmod(path, os.stat(path).st_mode | stat.S_IWUSR)
-    dir_path = os.path.dirname(path)
-    os.chmod(dir_path, os.stat(dir_path).st_mode | stat.S_IWUSR)
-    function(path)
+    """\
+    ディレクトリツリー上でpathの親以上にあたるディレクトリを
+    ルートから辿り、アクセス権限があるかを確認する。
+    また親ディレクトリについては書き込み権限があることを確認する。
+    """
+    if _is_permission_error(exc):
+        # 消せない理由は親以上のディレクトリにアクセス権限がないか
+        # 親が書き込み不可能か。
+        # よってルートから順番に書き込み権限を強制付与する。
+        # ただし、ルート付近は別ユーザ(root等)のディレクトリのはずなので
+        # アクセスビットを立てる前に自分がオーナーであるディレクトリかを
+        # チェックする
+        target_dirs_stack = []
+        parent_dir_path = os.path.dirname(path)
+        cur_path = parent_dir_path
+        while cur_path:
+            target_dirs_stack.append(cur_path)
+            cur_path = os.path.dirname(cur_path)
+        while target_dirs_stack:
+            cur_path = target_dirs_stack.pop()
+            if not os.access(cur_path):
+                if os.geteuid() == os.stat(cur_path).st_uid:
+                    os.chmod(cur_path,
+                             os.stat(cur_path).st_mode | stat.S_IXUSR)
+                else:
+                    # アクセス権がなくオーナーでもないディレクトリが
+                    # 間に挟まっている。
+                    # この場合、pathは削除出来ないと考えて例外を送出する
+                    raise exc
+            if (cur_path == parent_dir_path
+                and not (os.stat(cur_path).st_mode & stat.S_IWUSR)):
+                os.chmod(cur_path,
+                         os.stat(cur_path).st_mode | stat.S_IWUSR)
+        function(path)
+    else:
+        raise
 
 
 def _remove_if_exists(dir_path, logger):
