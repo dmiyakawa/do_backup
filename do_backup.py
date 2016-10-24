@@ -255,7 +255,9 @@ def _remove_old_backups_if_exist(today, base_dir, dir_format,
                                                           logger=logger))
             logger.debug('Finished removing "{}"'.format(dir_path))
         else:
-            logger.debug('"{}" does not exist.'.format(dir_path))
+            # 流石に少しverboseすぎる
+            # logger.debug('"{}" does not exist.'.format(dir_path))
+            pass
 
 
 def _find_link_dir(today, base_dir, dir_format,
