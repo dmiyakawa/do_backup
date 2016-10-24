@@ -212,25 +212,24 @@ def _del_rw(function, path, exc):
         raise
 
 
-def _remove_if_exists(dir_path, logger):
-    if os.path.exists(dir_path):
-        if not os.path.isdir(dir_path):
-            logger.error('{} is not a directory.'.format(dir_path))
-            return
-        logger.info('Removing old backup "{}"'.format(dir_path))
-        shutil.rmtree(dir_path, onerror=_del_rw)
-        logger.debug('Finished removing "{}"'.format(dir_path))
-
-
-def _remove_old_backups(today, base_dir, dir_format,
-                        first_index, last_index, hourly, logger):
+def _remove_old_backups_if_exist(today, base_dir, dir_format,
+                                 first_index, last_index, hourly, logger):
     for i in range(first_index, last_index + 1):
         if hourly:
             thatday = today - timedelta(hours=i)
         else:
             thatday = today - timedelta(days=i)
         dir_path = _get_backup_dir_path(thatday, base_dir, dir_format)
-        _remove_if_exists(dir_path, logger)
+        if os.path.exists(dir_path):
+            if not os.path.isdir(dir_path):
+                logger.warn('{} is not a directory. Ignoring.'
+                            .format(dir_path))
+                continue
+            logger.info('Removing old backup "{}"'.format(dir_path))
+            shutil.rmtree(dir_path, onerror=_del_rw)
+            logger.debug('Finished removing "{}"'.format(dir_path))
+        else:
+            logger.debug('{} does not exist.'.format(dir_path))
 
 
 def _find_link_dir(today, args, logger):
@@ -390,11 +389,13 @@ def _main_inter(args, logger):
     logger.debug('Backup {} to "{}"'.format(src_str, dest_dir_path))
 
     if args.removal_threshold > 0:
+        logger.debug('Remove old backups if exist (threshold: {})'
+                     .format(args.removal_threshold))
         first_index = args.removal_threshold + 1
         last_index = _DEFAULT_REMOVAL_SEARCH_THRESHOLD
-        _remove_old_backups(today, args.base_dir, args.dir_format,
-                            first_index, last_index,
-                            args.hourly, logger)
+        _remove_old_backups_if_exist(today, args.base_dir, args.dir_format,
+                                     first_index, last_index,
+                                     args.hourly, logger)
     link_dir_path = _find_link_dir(today, args, logger)
     included_dirs = _DEFAULT_INCLUDED_DIR
     if args.include:
