@@ -15,7 +15,7 @@ from datetime import datetime, timedelta
 import dateutil.relativedelta
 from logging import getLogger, StreamHandler, Formatter
 from logging import DEBUG, WARN
-from logging.handlers import RotatingFileHandler
+from logging.handlers import RotatingFileHandler, NullHandler
 import os
 import os.path
 import platform
@@ -56,6 +56,10 @@ _DEFAULT_EXCLUDED_DIR = ['/dev', '/proc', '/sys', '/tmp',
                          '/lost+found',
                          '/var/lock', '/var/tmp', '/var/run',
                          '/backup']
+
+_null_logger = getLogger('null')
+_null_logger.addHandler(NullHandler())
+_null_logger.propagate = False
 
 
 def _parse_args():
@@ -173,12 +177,13 @@ def _is_permission_error(exc):
         return isinstance(exc, PermissionError)
 
 
-def _del_rw(function, path, exc):
+def _del_rw(function, path, exc, logger=None):
     """\
     ディレクトリツリー上でpathの親以上にあたるディレクトリを
     ルートから辿り、アクセス権限があるかを確認する。
     また親ディレクトリについては書き込み権限があることを確認する。
     """
+    logger = logger or _null_logger
     if _is_permission_error(exc):
         # 消せない理由は親以上のディレクトリにアクセス権限がないか
         # 親が書き込み不可能か。
@@ -229,7 +234,7 @@ def _remove_old_backups_if_exist(today, base_dir, dir_format,
             shutil.rmtree(dir_path, onerror=_del_rw)
             logger.debug('Finished removing "{}"'.format(dir_path))
         else:
-            logger.debug('{} does not exist.'.format(dir_path))
+            logger.debug('"{}" does not exist.'.format(dir_path))
 
 
 def _find_link_dir(today, args, logger):
