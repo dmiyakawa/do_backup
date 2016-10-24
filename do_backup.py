@@ -31,7 +31,7 @@ import traceback
 if sys.version_info[0] == 3:
     unicode = str
 
-Version = '3.5.1'
+Version = '3.6.0'
 
 _DEFAULT_FULL_BACKUP_INTERVAL = 31
 _DEFAULT_DIR = '/mnt/disk0/backup'
