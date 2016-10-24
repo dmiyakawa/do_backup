@@ -217,8 +217,9 @@ def _remove_if_exists(dir_path, logger):
         if not os.path.isdir(dir_path):
             logger.error('{} is not a directory.'.format(dir_path))
             return
-        logger.debug('Removing {}'.format(dir_path))
+        logger.info('Removing old backup "{}"'.format(dir_path))
         shutil.rmtree(dir_path, onerror=_del_rw)
+        logger.debug('Finished removing "{}"'.format(dir_path))
 
 
 def _remove_old_backups(today, base_dir, dir_format,
@@ -229,7 +230,6 @@ def _remove_old_backups(today, base_dir, dir_format,
         else:
             thatday = today - timedelta(days=i)
         dir_path = _get_backup_dir_path(thatday, base_dir, dir_format)
-        logger.info('Removing old backup "{}"'.format(dir_path))
         _remove_if_exists(dir_path, logger)
 
 
