@@ -34,7 +34,7 @@ if sys.version_info[0] == 3:
 
 Version = '3.5.1'
 
-_DEFAULT_FULL_BACKUP_INTERVAL = 35
+_DEFAULT_FULL_BACKUP_INTERVAL = 31
 _DEFAULT_DIR = '/mnt/disk0/backup'
 _DEFAULT_DIR_FORMAT = '{hostname}-%Y%m%d'
 _DEFAULT_DIR_FORMAT_HOURLY = '{hostname}-%Y%m%d-%H'
@@ -86,7 +86,7 @@ def _parse_args():
                               ' (unit: days).'
                               ' 0 or less implies "force full-backup."'),
                         default=_DEFAULT_FULL_BACKUP_INTERVAL)
-    parser.add_argument('--removal-threshold',
+    parser.add_argument('-t', '--removal-threshold',
                         action='store',
                         type=int,
                         help=(('Specifies until when this script keeps'
