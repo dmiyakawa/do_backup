@@ -13,9 +13,9 @@ from __future__ import unicode_literals
 import argparse
 from datetime import datetime, timedelta
 import dateutil.relativedelta
-from logging import getLogger, StreamHandler, Formatter
+from logging import getLogger, StreamHandler, Formatter, NullHandler
 from logging import DEBUG, WARN
-from logging.handlers import RotatingFileHandler, NullHandler
+from logging.handlers import RotatingFileHandler
 import os
 import os.path
 import platform
@@ -30,7 +30,6 @@ import traceback
 
 if sys.version_info[0] == 3:
     unicode = str
-
 
 Version = '3.5.1'
 
