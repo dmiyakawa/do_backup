@@ -186,6 +186,10 @@ def _del_rw(function, path, exc_info, logger=None):
     前提にしている。functionは例外を送出した関数、
     path は function に渡されたパス名、
     exc_info は (type, value, traceback) となる。
+
+    loggerを使用する場合は、rmtree()のonerrorに
+    lambda a, b, c: _del_rw(a, b, c, logger=logger)
+    などと指定すれば良い。
     """
     logger = logger or _null_logger
     if _is_permission_error(exc_info[1]):
