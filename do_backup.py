@@ -31,7 +31,7 @@ import traceback
 if sys.version_info[0] == 3:
     unicode = str
 
-Version = '3.6.0'
+Version = '3.7.0'
 
 _FULL_BACKUP_INTERVAL = 30
 _DEFAULT_DIR = '/mnt/disk0/backup'
@@ -59,6 +59,10 @@ _DEFAULT_EXCLUDED_DIR = ['/dev', '/proc', '/sys', '/tmp',
 _null_logger = getLogger('null')
 _null_logger.addHandler(NullHandler())
 _null_logger.propagate = False
+
+
+class AppException(Exception):
+    pass
 
 
 def _parse_args():
@@ -146,6 +150,8 @@ def _parse_args():
                         help='Can Specify "local", "ssh", or "rough"')
     parser.add_argument('-c', '--rsync-command', default='rsync',
                         help='Exact command name to use')
+    parser.add_argument('--rsync-bwlimit', metavar='KBPS',
+                        help='Value for rsync\'s --bwlimit option')
     parser.add_argument('-v', '--version',
                         action='version',
                         version='{}'.format(Version),
@@ -285,39 +291,47 @@ def _log_thread(file_in, logger, prefix):
         logger.debug(msg)
 
 
+def _construct_rsync_opts(args, link_dir_path, included_dirs, excluded_dirs,
+                          logger=None):
+    logger = logger or _null_logger
+    if args.src_type == 'ssh':
+        # Note: do not rely on archive mode (-a)
+        rsync_opts = ['-irtlz', '--delete', '--no-specials', '--no-devices']
+    elif args.src_type == 'rough':
+        # "Rough" backup, meaning you just want to preserve file content, while
+        # you don't care much about permission, storage usage, etc.
+        rsync_opts = ['-irtL', '--no-specials', '--no-devices']
+    else:
+        rsync_opts = ['-iaAHXLu', '--delete', '--no-specials', '--no-devices']
+    if args.verbose_rsync:
+        rsync_opts.append('--verbose')
+    if link_dir_path:
+        rsync_opts.append('--link-dest={}'.format(link_dir_path))
+    rsync_opts.extend(map(lambda x: '--include ' + x, included_dirs))
+    rsync_opts.extend(map(lambda x: '--exclude ' + x, excluded_dirs))
+    if args.exclude_from:
+        rsync_opts.append(args.exclude_from)
+    if args.identity_file:
+        if not os.path.exists(args.identity_file):
+            err_msg = ('Identity file "{}" does not exist.'
+                       .format(args.identity_file))
+            raise AppException(err_msg)
+        rsync_opts.append('-e "ssh -i {}"'.format(args.identity_file))
+    if args.rsync_bwlimit:
+        rsync_opts.append('--bwlimit "{}"'.format(args.rsync_bwlimit))
+    return rsync_opts
+
+
 def _do_actual_backup(src_list, dest_dir_path, link_dir_path,
                       included_dirs, excluded_dirs, logger, args):
     '''
     Returns exit status code of rsync command.
     '''
     cmd_base = args.rsync_command
-    if args.src_type == 'ssh':
-        # Note: do not rely on archive mode (-a)
-        options = ['-irtlz', '--delete', '--no-specials', '--no-devices']
-    elif args.src_type == 'rough':
-        # "Rough" backup, meaning you just want to preserve file content, while
-        # you don't care much about permission, storage usage, etc.
-        options = ['-irtL', '--no-specials', '--no-devices']
-    else:
-        options = ['-iaAHXLu', '--delete', '--no-specials', '--no-devices']
-    if args.verbose_rsync:
-        options.append('--verbose')
-    if link_dir_path:
-        options.append('--link-dest={}'.format(link_dir_path))
-    options.extend(map(lambda x: '--include ' + x, included_dirs))
-    options.extend(map(lambda x: '--exclude ' + x, excluded_dirs))
-    if args.exclude_from:
-        options.append(args.exclude_from)
-    if args.identity_file:
-        if not os.path.exists(args.identity_file):
-            err_msg = ('Identity file "{}" does not exist.'
-                       .format(args.identity_file))
-            raise RuntimeError(err_msg)
-        logger.debug('Using identity file "{}"'
-                     .format(args.identity_file))
-        options.append('-e "ssh -i {}"'.format(args.identity_file))
-
-    cmd = '{} {} {} {}'.format(cmd_base, ' '.join(options),
+    rsync_opts = _construct_rsync_opts(args, link_dir_path,
+                                       included_dirs, excluded_dirs,
+                                       logger=logger)
+    cmd = '{} {} {} {}'.format(cmd_base, ' '.join(rsync_opts),
                                ' '.join(src_list), dest_dir_path)
     logger.debug('Running: {}'.format(cmd))
     if args.log_rsync_output:
